@@ -19,7 +19,7 @@ const agentProxies = {};
 
 function getProxy(sandboxId) {
 
-const target = `http://sandbox-service-${sandboxId}`;
+const target = `http://sandbox-service-${sandboxId}:5173`;
 
   if (!proxies[sandboxId]) {
     proxies[sandboxId] = createProxyMiddleware({
