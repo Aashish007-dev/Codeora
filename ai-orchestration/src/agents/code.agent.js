@@ -21,4 +21,6 @@ await agent.invoke({
             content: "update the theme of the project to light"
         }
     ]
-})
+});
+
+export default agent;
