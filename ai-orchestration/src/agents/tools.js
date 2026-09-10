@@ -12,7 +12,7 @@ export const listFiles = tool(
       
         const response = await axios.get(`http://sandbox-service-${config.context.projectId}:3000/list-files`);
 
-        writer("Files listed successfully.\n");
+        writer("Files listed successfully."+ "Files: " + response.data.files.join(",") + "\n");
 
         return JSON.stringify(response.data.files);
     },
@@ -28,7 +28,7 @@ export const readFiles = tool(
 
         const writer = config.writer;
 
-        writer("Reading files...\n");
+        writer("Reading files..."+ files.join(",") + "\n");
 
         const response = await axios.get(`http://sandbox-service-${config.context.projectId}:3000/read-files?files=`+ files.join(","));
         
@@ -50,7 +50,7 @@ export const updatefiles = tool(
 
         const writer = config.writer;
 
-        writer("Updating files...\n");
+        writer("Updating files..."+ files.map(f => f.file).join(",") + "\n");
 
         const response = await axios.patch(`http://sandbox-service-${config.context.projectId}:3000/update-files`, {
             updates: files
