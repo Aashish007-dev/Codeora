@@ -1,5 +1,6 @@
 import express from 'express';
 import morgan from 'morgan';
+import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import {Server} from 'socket.io';
@@ -13,8 +14,12 @@ const app = express();
 const httpServer = http.createServer(app);
 
 app.use(morgan('dev'));
+
+app.use(cors({ methods: ["GET","POST","PATCH","DELETE"], origin: "*" }));
+
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+
 
 const io = new Server(httpServer, {
     cors: {

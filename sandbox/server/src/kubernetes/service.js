@@ -1,19 +1,17 @@
 import { K8sCoreV1Api } from "./config.js";
 
-export const createService = async (sanboxId) => {
+export const createService = async (sandboxId) => {
     const serviceManiFest ={
         metadata: {
-            name: `sandbox-service-${sanboxId}`,
+            name: `sandbox-service-${sandboxId}`,
             lebels: {
-                app: 'sandbox',
-                sanboxId: sanboxId
+                sandboxId: sandboxId
             }
         },
 
         spec: {
             selector: {
-                app: 'sandbox',
-                sanboxId: sanboxId
+                sandboxId: sandboxId
             },
 
             ports: [
