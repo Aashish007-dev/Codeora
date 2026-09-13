@@ -2,6 +2,7 @@ import {Router} from 'express';
 import passport from 'passport';
 import userModel from '../models/user.model.js';
 import jwt from 'jsonwebtoken';
+import { sendAuthNotification } from '../config/mq.js';
 
 const authRouter = Router();
 
@@ -26,6 +27,13 @@ authRouter.get(
 
             let user = await userModel.findOne({
                 googleId: id
+            });
+
+            await sendAuthNotification({
+                userId: user._id,
+                action: 'google_login',
+                timestamp: new Date(),
+                email: emails[0].value
             });
 
             if (!user) {
