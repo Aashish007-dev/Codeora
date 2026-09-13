@@ -57,7 +57,7 @@ authRouter.get(
                 httpOnly: true
             });
 
-            res.redirect("/");
+            res.redirect("http://localhost:5173");
         } catch (error) {
             console.log(
                 "Error during google authentication:",
