@@ -30,6 +30,11 @@ build:
         infer:
           - "src/**"
 
+    - image: sync-agent
+      context: sandbox/sync-agent
+      docker:
+        dockerfile: dockerfile
+
     - image: agent
       context: sandbox/agent
       docker:
