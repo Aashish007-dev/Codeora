@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
@@ -9,6 +9,11 @@ import {
   Zap,
   ArrowRight,
   Loader2,
+  Plus,
+  FolderOpen,
+  Clock,
+  Trash2,
+  X,
 } from "lucide-react";
 
 const PARTICLES = Array.from({ length: 30 }, (_, i) => ({
@@ -49,25 +54,102 @@ const FEATURES = [
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(false);
+  const [loadingProjectId, setLoadingProjectId] = useState(null);
   const [error, setError] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [projectTitle, setProjectTitle] = useState("");
   const navigate = useNavigate();
 
-  const handleCreateSandbox = async () => {
+  // Fetch existing projects on mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    setProjectsLoading(true);
+    try {
+      const res = await fetch("/api/sandbox/projects", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch projects");
+      const data = await res.json();
+      setProjects(data.projects || []);
+    } catch (err) {
+      console.error("Failed to load projects:", err);
+      setProjects([]);
+    } finally {
+      setProjectsLoading(false);
+    }
+  };
+
+  // Create a new project, then start sandbox
+  const handleCreateProject = async (e) => {
+    e.preventDefault();
+    if (!projectTitle.trim()) return;
+
     setLoading(true);
+    setError(null);
+    try {
+      // Step 1: Create the project
+      const projectRes = await fetch("/api/sandbox/project", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: projectTitle.trim() }),
+      });
+      if (!projectRes.ok) {
+        const errData = await projectRes.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to create project");
+      }
+      const projectData = await projectRes.json();
+      const projectId = projectData.project._id;
+
+      // Step 2: Start sandbox with the project ID
+      const sandboxRes = await fetch("/api/sandbox/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ projectId }),
+      });
+      if (!sandboxRes.ok) {
+        const errData = await sandboxRes.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to create sandbox");
+      }
+      const sandboxData = await sandboxRes.json();
+
+      navigate(`/sandbox/${sandboxData.sandboxId}`, {
+        state: { previewUrl: sandboxData.previewUrl },
+      });
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  // Start sandbox from an existing project
+  const handleOpenProject = async (projectId) => {
+    setLoadingProjectId(projectId);
     setError(null);
     try {
       const res = await fetch("/api/sandbox/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ projectId }),
       });
-      if (!res.ok) throw new Error("Failed to create sandbox");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to create sandbox");
+      }
       const data = await res.json();
       navigate(`/sandbox/${data.sandboxId}`, {
         state: { previewUrl: data.previewUrl },
       });
     } catch (err) {
       setError(err.message);
-      setLoading(false);
+      setLoadingProjectId(null);
     }
   };
 
@@ -124,6 +206,9 @@ export default function LandingPage() {
           <a href="#features" className="hover:text-white transition-colors">
             Features
           </a>
+          <a href="#projects" className="hover:text-white transition-colors">
+            Projects
+          </a>
           <a
             href="https://github.com"
             target="_blank"
@@ -164,85 +249,151 @@ export default function LandingPage() {
           all in one sandbox.
         </p>
 
-        {/* CTA Button */}
+        {/* CTA: New Project */}
         <div
           className="animate-fade-in-up mt-10"
           style={{ animationDelay: "0.45s" }}
         >
-          <button
-            onClick={handleCreateSandbox}
-            disabled={loading}
-            className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-semibold text-lg
-              bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500
-              shadow-lg shadow-purple-600/25 hover:shadow-purple-500/40
-              transition-all duration-300 hover:scale-[1.03] active:scale-[0.98]
-              disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 animate-pulse-glow"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Creating Sandbox...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Create Sandbox
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </>
-            )}
-          </button>
+          {!showNewProject ? (
+            <button
+              onClick={() => setShowNewProject(true)}
+              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-semibold text-lg
+                bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500
+                shadow-lg shadow-purple-600/25 hover:shadow-purple-500/40
+                transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] animate-pulse-glow"
+            >
+              <Plus className="w-5 h-5" />
+              New Project
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </button>
+          ) : (
+            <form
+              onSubmit={handleCreateProject}
+              className="flex items-center gap-3 animate-fade-in-up"
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={projectTitle}
+                  onChange={(e) => setProjectTitle(e.target.value)}
+                  placeholder="Enter project title..."
+                  autoFocus
+                  disabled={loading}
+                  className="w-72 px-5 py-3.5 rounded-xl bg-white/[0.06] border border-white/10
+                    text-white placeholder-gray-500 text-base font-medium
+                    focus:outline-none focus:border-purple-500/50 focus:ring-2 focus:ring-purple-500/20
+                    transition-all duration-200 disabled:opacity-50"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !projectTitle.trim()}
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-white font-semibold
+                  bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500
+                  shadow-lg shadow-purple-600/25 hover:shadow-purple-500/40
+                  transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Create & Launch
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewProject(false);
+                  setProjectTitle("");
+                  setError(null);
+                }}
+                className="p-3 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </form>
+          )}
 
           {error && <p className="mt-4 text-red-400 text-sm">{error}</p>}
         </div>
 
-        {/* IDE Preview Mockup */}
+        {/* ─── Projects List ─── */}
         <div
+          id="projects"
           className="animate-fade-in-up mt-16 w-full max-w-4xl mx-auto"
           style={{ animationDelay: "0.6s" }}
         >
           <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl shadow-purple-500/10">
-            {/* Window bar */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 bg-white/[0.02]">
-              <div className="w-3 h-3 rounded-full bg-red-500/70" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
-              <div className="w-3 h-3 rounded-full bg-green-500/70" />
-              <div className="ml-3 flex-1 h-6 rounded-md bg-white/5 flex items-center justify-center">
-                <span className="text-xs text-gray-500 font-mono">
-                  codeora.dev/sandbox
-                </span>
-              </div>
+            {/* Header bar */}
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/5 bg-white/[0.02]">
+              <FolderOpen className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-semibold text-gray-200">
+                Your Projects
+              </span>
+              <span className="ml-auto text-xs text-gray-500">
+                {projects.length} project{projects.length !== 1 ? "s" : ""}
+              </span>
             </div>
-            {/* Content */}
-            <div className="flex h-64">
-              {/* Sidebar */}
-              <div className="w-48 border-r border-white/5 p-3 space-y-1.5 hidden sm:block">
-                {[
-                  "src/",
-                  "  App.jsx",
-                  "  index.css",
-                  "  main.jsx",
-                  "package.json",
-                  "vite.config.js",
-                ].map((f, i) => (
-                  <div
-                    key={i}
-                    className={`text-xs font-mono px-2 py-1 rounded ${i === 1 ? "bg-purple-500/15 text-purple-300" : "text-gray-500"}`}
-                  >
-                    {f}
-                  </div>
-                ))}
-              </div>
-              {/* Main area */}
-              <div className="flex-1 p-4 flex items-center justify-center">
-                <div className="text-center space-y-3">
-                  <div className="mx-auto w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center">
+
+            {/* Projects content */}
+            <div className="p-4 min-h-[200px]">
+              {projectsLoading ? (
+                <div className="flex items-center justify-center h-40">
+                  <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                  <span className="ml-3 text-gray-400 text-sm">
+                    Loading projects...
+                  </span>
+                </div>
+              ) : projects.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20 flex items-center justify-center mb-3">
                     <Code2 className="w-6 h-6 text-purple-400" />
                   </div>
                   <p className="text-sm text-gray-400">
-                    Your AI workspace awaits...
+                    No projects yet. Create your first one above!
                   </p>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {projects.map((project) => (
+                    <button
+                      key={project._id}
+                      onClick={() => handleOpenProject(project._id)}
+                      disabled={loadingProjectId === project._id}
+                      className="group flex items-center gap-3 p-4 rounded-xl
+                        bg-white/[0.02] border border-white/5
+                        hover:bg-white/[0.05] hover:border-purple-500/20
+                        transition-all duration-200 hover:-translate-y-0.5
+                        disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/15 flex items-center justify-center shrink-0 group-hover:border-purple-500/30 transition-colors">
+                        <Code2 className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white transition-colors">
+                          {project.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5 font-mono truncate">
+                          {project._id}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        {loadingProjectId === project._id ? (
+                          <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                        ) : (
+                          <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-purple-400 transition-colors" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ export async function createSandboxKey(sandboxId) {
         `sandbox:${sandboxId}`,
         JSON.stringify({ status: 'active' }),
         'EX',
-        120
+        60 * 20
     );
 }
 
