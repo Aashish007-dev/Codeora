@@ -5,52 +5,46 @@ build:
   tagPolicy:
     sha256: {}
 
+  platforms:
+    - linux/amd64 
+
   artifacts:
-    - image: ai-orchestration
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/ai-orchestration
       context: ai-orchestration
       docker:
         dockerfile: dockerfile
-      sync:
-        infer:
-          - "src/**"
 
-    - image: auth
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/auth
       context: auth
       docker:
         dockerfile: dockerfile
-      sync:
-        infer:
-          - "src/**"
 
-    - image: notification
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/notification
       context: notification
       docker:
         dockerfile: dockerfile
-      sync:
-        infer:
-          - "src/**"
 
-    - image: sync-agent
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/sync-agent
       context: sandbox/sync-agent
       docker:
         dockerfile: dockerfile
 
-    - image: agent
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/agent
       context: sandbox/agent
       docker:
         dockerfile: dockerfile
 
-    - image: router
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/router
       context: sandbox/router
       docker:
         dockerfile: dockerfile
 
-    - image: sandbox
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/sandbox
       context: sandbox/server
       docker:
         dockerfile: dockerfile
 
-    - image: template
+    - image: 218484443155.dkr.ecr.ap-south-1.amazonaws.com/template
       context: sandbox/template
       docker:
         dockerfile: dockerfile
@@ -68,5 +62,5 @@ manifests:
     - k8s/notification-deployment.yml
     - k8s/notification-service.yml
     - k8s/ingress.yml
-    - k8s/secrets.yml
-    - k8s/rbac.yml
+    # - k8s/secrets.yml
+    # - k8s/rbac.yml

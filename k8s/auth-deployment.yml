@@ -15,7 +15,7 @@ spec:
         app:  auth
     spec:
       containers:
-      - image:  auth
+      - image:  218484443155.dkr.ecr.ap-south-1.amazonaws.com/auth
         name:  auth-container
         resources:
           requests:
